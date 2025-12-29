@@ -18,6 +18,7 @@ for((i=$first;i<=$last;i++))
 do
     echo "test $i"
     ./gen > test.in
+    head -n 1 test.in
     time MallocNanoZone=0 ./wzo < test.in > test.wzo
     time ./brute_log < test.in > test.brute_log
     diff -b test.wzo test.brute_log || break

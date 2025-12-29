@@ -21,11 +21,55 @@ ostream& operator<<(ostream& os, pair<int, int> interval){
     return os << "(" << interval.first + 1 << " " << interval.second + 1 << ")";
 }
 
+template<typename T>
+struct QuickDeque {
+    int back_ind = 0;
+    int front_ind = 0;
+    vector<T> vec;
+
+    bool empty(){
+        return front_ind - back_ind == 0;
+    }
+    void push_front(T x){
+        if((int)vec.size() == front_ind){
+            vec.push_back(x);
+            front_ind++;
+        }
+        else {
+            vec[(size_t)(front_ind++)] = x;
+        }
+    }
+    void pop_front(){
+        if(!empty()){
+            front_ind--;
+        }
+    }
+    //void push_back(T x);
+    void pop_back(){
+        if(!empty()){
+            back_ind++;
+        }
+    }
+    T front(){
+        assert(!empty());
+        return vec[(size_t)(front_ind - 1)];
+    }
+    T back(){
+        assert(!empty());
+        return vec[(size_t)back_ind];
+    }
+    void reserve(int n){
+        if(n > 0)
+            vec.reserve((size_t)n);
+    }
+};
+
 struct MaxQueue {
     int push_index = 0;
     int pop_index = 0;
     bool (*less)(int, int); //specify the order
-    deque<pair<int, int> > dq; //<value, index>
+    //deque<pair<int, int> > dq; //<value, index>
+    QuickDeque<pair<int, int>> dq;
 
     MaxQueue(bool (*order)(int, int)) : less(order) {}
 
@@ -49,6 +93,9 @@ struct MaxQueue {
     }
     int Size(){
         return push_index - pop_index;
+    }
+    void Reserve(int n){
+        dq.reserve(n);
     }
 };
 
@@ -82,6 +129,10 @@ struct MinMaxQueue {
         else
             return false;
     }
+    void Reserve(int n){
+        maxQ.Reserve(n);
+        minQ.Reserve(n);
+    }
 };
 
 //paprtitions which we'll be dealing in this program cannot be reduced
@@ -104,15 +155,22 @@ struct Partition {
 };
 
 struct IntervalStack {
-    deque<pair<int, int> > dq;
-    vector<pair<int, int>> points;
+    //deque<pair<int, int> > dq;
+    vector<pair<pair<int, int>, Partition> > dq;
+    const vector<pair<int, int>>& points;
 
-    IntervalStack(const vector<pair<int, int>>& points_info){
-        points = points_info;
+    IntervalStack(const vector<pair<int, int>>& points_info) : points(points_info) {}
+
+    Partition GetIntervalScore2(pair<int, int> i){
+        assert((int)points.size() > i.second);
+        assert(i.first <= i.second);
+        long long xr = points[(size_t)i.second].first;
+        long long xl = points[(size_t)i.first].first;
+        return Partition((xr - xl) * (xr - xl), i.second - i.first + 1);
     }
 
     void Push(pair<int, int> interval){
-        dq.push_back(interval);
+        dq.push_back({interval, GetIntervalScore2(interval)});
     }
     void Pop(){
         if(!dq.empty()){
@@ -121,21 +179,14 @@ struct IntervalStack {
     }
     pair<int, int> Top(){
         assert(!dq.empty());
-        return dq.back();
+        return dq.back().first;
     }
     bool Empty(){
         return dq.empty();
     }
-    Partition GetIntervalScore2(pair<int, int> i){
-        assert((int)points.size() > i.second);
-        assert(i.first <= i.second);
-        long long xr = points[(size_t)i.second].first;
-        long long xl = points[(size_t)i.first].first;
-        return Partition((xr - xl) * (xr - xl), i.second - i.first + 1);
-    }
     Partition GetTopScore(){
         assert(!dq.empty());
-        return GetIntervalScore2(Top());
+        return dq.back().second;
     }
     
 };

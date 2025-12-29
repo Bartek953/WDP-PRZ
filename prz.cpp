@@ -1,4 +1,5 @@
 #include "prz.h"
+#include <stdio.h>
 
 //This solution is O(n)
 
@@ -6,10 +7,13 @@ void read_data(int& n, int& U, vector<pair<int, int>>& points){
     cin >> n >> U;
     assert(1 <= n && 0 <= U);
 
+    points.reserve((size_t)n);
+
     int x, y;
     int prev_x = -1;
     for(int i = 0; i < n; i++){
-        cin >> x >> y;
+        //cin >> x >> y;
+        scanf("%d %d", &x, &y);
         assert(0 <= x && 0 <= y);
         assert(prev_x < x);
 
@@ -23,6 +27,7 @@ void read_data(int& n, int& U, vector<pair<int, int>>& points){
 //That allows me to use two-pointers technique, which results in complexity O(n)
 void calculate_intervals(int n, int U, const vector<pair<int, int>>& points, IntervalStack& intervals){
     MinMaxQueue mq;
+    mq.Reserve(n);
     int right = 0;
     for(int left = 0; left < n; left++){
         //[left, right)
@@ -114,6 +119,8 @@ void calculate_result(int n, IntervalStack& intervals, vector<pair<int, int>>& r
     pair<int, int> curr_interval = {-1, -1};
     Partition curr_score(0, 1);
 
+    result.reserve((size_t)n);
+
     for(int i = n - 1; i >= 0; i--){
 
         bool debug = in_range(i, {510, 512});
@@ -144,8 +151,8 @@ void calculate_result(int n, IntervalStack& intervals, vector<pair<int, int>>& r
 
 
 int main(){
-    ios::sync_with_stdio(0);
-    cin.tie(0);
+    //ios::sync_with_stdio(0);
+    //cin.tie(0);
     
     cerr << "WZO\n";
 
@@ -162,7 +169,8 @@ int main(){
     calculate_result(n, intervals, result);
 
     for(auto [l, r] : result){
-        cout << (l + 1) << ' ' << (r + 1) << '\n';
+        //cout << (l + 1) << ' ' << (r + 1) << '\n';
+        printf("%d %d\n", l + 1, r + 1);
     }
     
 }
