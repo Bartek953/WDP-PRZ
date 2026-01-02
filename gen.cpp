@@ -54,7 +54,7 @@ int log_dist(pair<int, int> p){
 }
 
 struct Config {
-    const pair<int, int> n_range = {1, 1e5};
+    const pair<int, int> n_range = {3e6 - 10, 3e6};
     const pair<int, int> U_range = {0, 1e9};
     const pair<int, int> x_range = {0, 1e9};
     const pair<int, int> y_range = {0, 1e9};

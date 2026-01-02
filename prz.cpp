@@ -48,7 +48,7 @@ void calculate_intervals(int n, int U, const vector<pair<int, int>>& points, Int
 }
 
 //checks if ind is in range [interval.first, interval.second]
-bool in_range(int ind, pair<int, int> interval){
+inline bool in_range(int ind, pair<int, int> interval){
     return interval.first <= ind && ind <= interval.second;
 }
 //check whetever there's free space between two intervals
