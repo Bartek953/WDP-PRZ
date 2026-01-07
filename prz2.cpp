@@ -2,8 +2,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <utility>
-#include <cstdio>
-#include <cstdlib>
+#include <iostream>
 using namespace std;
 
 /*
@@ -36,71 +35,6 @@ const int MAX_X = 1e9;
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 //!!!!!!!!!!! LIBRARY !!!!!!!!!!!//
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
-
-struct FastIO {
-    static const int BUF_SIZE = 1 << 20; // 1MB buffer
-    char in_buf[BUF_SIZE], out_buf[BUF_SIZE];
-    int in_pos = 0, in_len = 0, out_pos = 0;
-
-    inline char getChar() {
-        if (in_pos == in_len) {
-            in_pos = 0;
-            in_len = (int)fread(in_buf, (size_t)1, (size_t)BUF_SIZE, stdin);
-            if (in_len <= 0) return EOF;
-        }
-        return in_buf[in_pos++];
-    }
-
-    inline int readInt() {
-        int x = 0;
-        char c = getChar();
-        
-        while (c != EOF && (c < '0' || c > '9')) {
-            c = getChar();
-        }
-        
-        if (c == EOF) {
-            fprintf(stderr, "[FastIO Error]\n");
-            exit(1); 
-        }
-        
-        while (c >= '0' && c <= '9') {
-            x = x * 10 + (c - '0');
-            c = getChar();
-        }
-        return x;
-    }
-
-    inline void putChar(char c) {
-        if (out_pos == BUF_SIZE) {
-            fwrite(out_buf, (size_t)1, (size_t)BUF_SIZE, stdout);
-            out_pos = 0;
-        }
-        out_buf[out_pos++] = c;
-    }
-
-    void writeInt(int x) {
-        if (x == 0) { putChar('0'); return; }
-        char s[12];
-        int i = 0;
-        while (x > 0) {
-            s[i++] = (x % 10) + '0';
-            x /= 10;
-        }
-        while (i--) putChar(s[i]);
-    }
-
-    void flush() {
-        if (out_pos > 0) {
-            fwrite(out_buf, (size_t)1, (size_t)out_pos, stdout);
-            out_pos = 0;
-        }
-    }
-
-    ~FastIO() {
-        flush();
-    }
-};
 struct Point {
     int x, y;
     Point(int xx, int yy) : x(xx), y(yy) {}
@@ -111,21 +45,6 @@ struct Partition {
     bool operator<(const Partition& other){
         return (__int128_t)up * (__int128_t)other.down < (__int128_t)other.up * (__int128_t)down;
     }
-    /*bool operator<(const Partition& other){
-        //down <= 10^6
-        long long x1 = up / down;
-        long long r1 = up % down;
-        //(up/down) = x1 + (r1/down)
-
-        long long x2 = other.up / other.down;
-        long long r2 = other.up % other.down;
-        //(other.up/other.down) = x2 + (r2/other.down)
-
-        if(x1 == x2){
-            return r1 * other.down < r2 * down;
-        }
-        else return x1 < x2;
-    }*/
 };
 struct Interval {
     int l, r;
@@ -147,169 +66,72 @@ bool operator <(const Interval& x, const Interval& y){
     else return res < 0;
 }
 
-//deque implementation on vector - it's faster
-//push_front() is not available
-template<typename T>
-struct QuickDeque {
-    vector<T> queue;
-    int push_index = 0;
-    int pop_index = 0;
-
-    void reserve(int n){
-        queue.reserve((size_t)n);
-    }
-    int size(){
-        assert(pop_index <= push_index);
-        return push_index - pop_index;
-    }
-    bool empty(){
-        return size() == 0;
-    }
-    void pop_front(){
-        if(!empty()){
-            pop_index++;
-        }
-        assert(pop_index <= push_index);
-    }
-    void push_back(T x){
-        assert(pop_index <= push_index);
-        assert(push_index <= (int)queue.size());
-
-        if(push_index == (int)queue.size()){
-            queue.push_back(x);
-            push_index++;
-        }
-        else {
-            queue[(size_t)(push_index++)] = x;
-        }
-    }
-    void pop_back(){
-        if(!empty()){
-            push_index--;
-        }
-        assert(pop_index <= push_index);
-    }
-    T front(){
-        assert(!empty());
-        return queue[(size_t)pop_index];
-    }
-    T back(){
-        assert(!empty());
-        return queue[(size_t)(push_index - 1)];
-    }
-};
-template<typename T>
-struct MaxQueue {
-    QuickDeque<pair<T, int> > dq;
-    int push_index = 0;
-    int pop_index = 0;
-    bool (*less_in_order)(T, T);
-
-    MaxQueue(bool (*cmp)(T, T)) : less_in_order(cmp) {}
-
-    void reserve(int n){
-        dq.reserve(n);
-    }
-    int size(){
-        assert(pop_index <= push_index);
-        return push_index - pop_index;
-    }
-    bool empty(){
-        return size() == 0;
-    }
-    void push(T x){
-        while(!dq.empty() && less_in_order(dq.back().first, x)){
-            dq.pop_back();
-        }
-        dq.push_back({x, push_index++});
-    }
-    void pop(){
-        if(!dq.empty() && dq.front().second == pop_index){
-            dq.pop_front();
-        }
-        pop_index++;
-        assert(pop_index <= push_index);
-    }
-    T get_max(){
-        assert(!empty());
-        return dq.front().first;
-    }
-};
-
-inline int max(int x, int y){
-    if(x >= y)
-        return x;
-    else
-        return y;
-}
-inline int abs(int x){
-    return max(x, -x);
-}
-
+//just classical two monotonic fifo queues - one with max(), second with min()
 struct MinMaxQueue {
-    MaxQueue<int> maxQ{ [](int x, int y){ return x <= y; } };
-    MaxQueue<int> minQ{ [](int x, int y){ return x >= y; } };
+    //<value, index>
+    vector<pair<int, int>> max_queue, min_queue;
+    int L = 0, R = 0;
+    int max_end = 0, min_end = 0;
 
     void reserve(int n){
-        maxQ.reserve(n);
-        minQ.reserve(n);
+        max_queue.reserve((size_t)n);
+        min_queue.reserve((size_t)n);
     }
     int size(){
-        assert(maxQ.size() == minQ.size());
-        return maxQ.size(); 
+        assert(L <= R);
+        return R - L;
     }
     bool empty(){
         return size() == 0;
     }
     void push(int x){
-        maxQ.push(x);
-        minQ.push(x);
+        while(max_end < (int)max_queue.size() && max_queue.back().first <= x)
+            max_queue.pop_back();
+        max_queue.push_back({x, R});
+
+        while(min_end < (int)min_queue.size() && min_queue.back().first >= x)
+            min_queue.pop_back();
+        min_queue.push_back({x, R});
+
+        R++;
     }
     void pop(){
         assert(!empty());
-        maxQ.pop();
-        minQ.pop();
+        if(max_queue[(size_t)max_end].second == L)max_end++;
+        if(min_queue[(size_t)min_end].second == L)min_end++;
+        L++;
     }
     int get_max(){
-        return maxQ.get_max();
+        return max_queue[(size_t)max_end].first;
     }
     int get_min(){
-        return minQ.get_max();
+        return min_queue[(size_t)min_end].first;
     }
     bool can_add(int x, int U){
         if(empty())
             return true;
-        if(max(abs(get_min() - x), abs(get_max() - x)) <= U)
-            return true;
-        else
-            return false;
+        return max(get_max(), x) - min(get_min(), x) <= U;
     }
 };
-
 
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 //!!!!!!!!!!! CORE LOGIC !!!!!!!!!!!//
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 
-//Im using c-style io for improved speed
 //points max memory: 3mln * 2 * 4B = 24MB;
 //function max memory: 24MB
-void read_data(FastIO& IO, int& n, int& U, vector<Point>& points){
-    //int res = scanf("%d %d", &n, &U);
-    //assert(res == 2);
-    n = IO.readInt();
-    U = IO.readInt();
+void read_data(int& n, int& U, vector<Point>& points){
+    cin >> n;
+    cin >> U;
     assert(1 <= n && n <= MAX_N && 0 <= U && U <= MAX_X);
 
     points.reserve((size_t)n);
     int x, y;
     int prev_x = -1;
     for(int i = 0; i < n; i++){
-        //res = scanf("%d %d", &x, &y);
-        //assert(res == 2);
-        x = IO.readInt();
-        y = IO.readInt();
+        cin >> x;
+        cin >> y;
 
         assert(0 <= x && x <= MAX_X && prev_x < x);
         prev_x = x;
@@ -368,7 +190,6 @@ inline bool distinct(const Interval& left, const Interval& right){
     return left.r + 1 < right.l;
 }
 inline bool useful(const Interval& I, const vector<Interval>& left_stack, const vector<Interval>& right_stack){
-    //printf("Comaprision: (%d, %d) (%d, %d), (%d, %d)", left_stack.back().l + 1, left_stack.back().r + 1, I.l + 1, I.r + 1, right_stack.back().l + 1, right_stack.back().r + 1);
     if(left_stack.empty() || right_stack.empty() || distinct(left_stack.back(), right_stack.back())
     || left_stack.back() < I || right_stack.back() < I){
         return true;
@@ -424,35 +245,31 @@ inline bool in_range(const int index, const Interval& I){
 //intervals are sorted
 //I just need to pick best result for each point
 //I also know that intervals will be answers in the same order they are sorted
-void calc_result(FastIO& IO, const int n, const vector<Interval>& intervals){
+void calc_result(const int n, const vector<Interval>& intervals){
     int interval_ind = 0;
     for(int i = 0; i < n; i++){
         while(interval_ind < (int)intervals.size() && !in_range(i, intervals[(size_t)interval_ind])){
             interval_ind++;
         }
-        //printf("%d %d %d\n", i, intervals[interval_ind].l, intervals[interval_ind].r);
         assert(in_range(i, intervals[(size_t)interval_ind]));
 
         while(interval_ind + 1 < (int)intervals.size() && in_range(i, intervals[(size_t)interval_ind + 1])
         && intervals[(size_t)interval_ind] < intervals[(size_t)interval_ind + 1]){
             interval_ind++;
         }
-        //printf("%d %d\n", intervals[(size_t)interval_ind].l + 1, intervals[(size_t)interval_ind].r + 1);
-        IO.writeInt(intervals[(size_t)interval_ind].l + 1);
-        IO.putChar(' ');
-        IO.writeInt(intervals[(size_t)interval_ind].r + 1);
-        IO.putChar('\n');
+        cout << intervals[(size_t)interval_ind].l + 1 << ' ' << intervals[(size_t)interval_ind].r + 1 << '\n';
     }
 }
 
 
 int main(){
-    FastIO IO;
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
     int n, U;
     vector<Point> points;
-    read_data(IO, n, U, points);
+    read_data(n, U, points);
     vector<Interval> intervals;
     calc_max_intervals(n, U, points, intervals);
     remove_useless(intervals);
-    calc_result(IO, n, intervals);
+    calc_result(n, intervals);
 }
