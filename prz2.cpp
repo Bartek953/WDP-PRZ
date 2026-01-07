@@ -1,78 +1,3 @@
-#include <chrono>
-#include <fstream>
-#include <iostream>
-#include <algorithm>
-
-size_t current_heap_usage = 0;
-size_t peak_heap_usage = 0;
-
-// Przeciążamy globalny operator new
-void* operator new(size_t size) {
-    current_heap_usage += size;
-    if (current_heap_usage > peak_heap_usage) {
-        peak_heap_usage = current_heap_usage;
-    }
-    
-    // Musimy użyć malloc, bo wywołanie 'new' tutaj 
-    // spowodowałoby nieskończoną rekurencję
-    void* ptr = malloc(size);
-    if (!ptr) throw std::bad_alloc();
-    return ptr;
-}
-
-// Przeciążamy globalny operator delete
-void operator delete(void* ptr) noexcept {
-    // UWAGA: W tej wersji nie wiemy, ile pamięci uwalniamy, 
-    // bo operator delete(void*) nie dostaje rozmiaru.
-    free(ptr);
-}
-
-// Od C++14 można przeciążyć wersję z rozmiarem, co pozwala
-// na dokładne dekrementowanie licznika:
-void operator delete(void* ptr, size_t size) noexcept {
-    current_heap_usage -= size;
-    free(ptr);
-}
-
-// Globalna zmienna do przechowywania punktu startowego
-static std::chrono::time_point<std::chrono::high_resolution_clock> global_timer_start;
-
-void start_timer() {
-    global_timer_start = std::chrono::high_resolution_clock::now();
-}
-
-void stop_timer() {
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> diff = end - global_timer_start;
-    double current_time = diff.count();
-
-    double max_time = 0.0;
-    const char* filename = "timer.txt";
-
-    // 1. Próba odczytu dotychczasowego rekordu
-    std::ifstream infile(filename);
-    if (infile.is_open()) {
-        infile >> max_time;
-        infile.close();
-    }
-
-    // 2. Jeśli obecny czas jest większy, aktualizujemy plik
-    if (current_time > max_time) {
-        std::ofstream outfile(filename, std::ios::trunc); // trunc nadpisuje plik
-        if (outfile.is_open()) {
-            outfile << std::fixed << current_time;
-            outfile.close();
-        }
-    }
-
-    // Opcjonalnie: wypisz na stderr dla informacji podczas testów
-    fprintf(stderr, "Obecny czas: %.6f s | Rekord: %.6f s\n", current_time, std::max(current_time, max_time));
-    fprintf(stderr, "Peak heap usage: %d MB\n", (int)peak_heap_usage / (1 << 20));
-}
-
-
-
-
 #include <vector>
 #include <stdio.h>
 #include <assert.h>
@@ -522,9 +447,6 @@ void calc_result(FastIO& IO, const int n, const vector<Interval>& intervals){
 
 
 int main(){
-    start_timer();
-    fprintf(stderr, "WZO 2\n");
-
     FastIO IO;
     int n, U;
     vector<Point> points;
@@ -533,6 +455,4 @@ int main(){
     calc_max_intervals(n, U, points, intervals);
     remove_useless(intervals);
     calc_result(IO, n, intervals);
-
-    stop_timer();
 }
